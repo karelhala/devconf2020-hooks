@@ -8,7 +8,9 @@ import ExpandMore from '@material-ui/icons/ExpandMore';
 import Collapse from '@material-ui/core/Collapse';
 import Link from '@material-ui/core/Link';
 import Typography from '@material-ui/core/Typography';
-import Grid from '@material-ui/core/Grid'
+import Box from '@material-ui/core/Box'
+import { withStyles, createStyles } from '@material-ui/core/styles';
+
 import BreedDetail from './breed-detail';
 
 class LifeCycleTransform extends Component {
@@ -34,10 +36,10 @@ class LifeCycleTransform extends Component {
   
   render() {
     const {breeds, opened} = this.state;
-    console.log('opened', opened)
+    const { classes } = this.props;
     return (
-      <Grid container spacing={3}>
-        <Grid item xs={2}>
+      <Box display="flex" flexDirection="row">
+        <Box p={1} className={classes.menuContainer}>
           <List
             component="nav"
             aria-labelledby="nested-list-subheader"
@@ -45,8 +47,8 @@ class LifeCycleTransform extends Component {
             {Object.entries(breeds).map(([name, subBreeds]) => (
               <Fragment key={name}>
                 <ListItem button onClick={() => this.handleMenuOpen(name)}>
-                  <ListItemText primary={name}/>
-                  { opened[name] ? <ExpandLess /> : <ExpandMore /> }
+                  <ListItemText primary={name} className={classes.capitalize}/>
+                  { opened[name] ? <ExpandLess className={classes.toggleExpand} /> : <ExpandMore className={classes.toggleExpand} /> }
                 </ListItem>
                 <Collapse in={ opened[name] } timeout="auto" unmountOnExit>
                   <List component="div" disablePadding>
@@ -61,7 +63,7 @@ class LifeCycleTransform extends Component {
                       <Typography
                         variant="button"
                         gutterBottom
-                        style={{ textTransform: 'capitalize', fontWeight: 'initial' }}
+                        className={classes.capitalize}
                       >
                         { subBreed }
                       </Typography>
@@ -72,15 +74,36 @@ class LifeCycleTransform extends Component {
               </Fragment>
               ))}
           </List>
-        </Grid>
-        <Grid item xs={10}>
+        </Box>
+        <Box p={1} className={classes.contentContainer}>
           <Route path="/breeds">
             <BreedDetail />
           </Route>.
-        </Grid>
-      </Grid>
+        </Box>
+      </Box>
     )
   }
 }
 
-export default LifeCycleTransform;
+const styles = createStyles(() => ({
+  menuContainer: {
+    overflowY: 'auto',
+    maxHeight: '100vh',
+    position: 'fixed',
+    width: 240
+  },
+  contentContainer: {
+    marginLeft: 240,
+    flexGrow: 1
+  },
+  toggleExpand: {
+    marginLeft: 16
+  },
+  capitalize: {
+    textTransform: 'capitalize',
+    fontWeight: 'initial'
+  }
+}))
+
+
+export default withStyles(styles)(LifeCycleTransform);
