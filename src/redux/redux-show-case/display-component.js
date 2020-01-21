@@ -1,5 +1,5 @@
 import React from 'react'
-import useSelector from '../../rexud-using-hooks/use-selector'
+import useSelector from '../rexud-using-hooks/use-selector'
 
 const DisplayComponent = () => {
   const count = useSelector(({ count }) => count)

@@ -4,7 +4,7 @@ import {createMuiTheme, ThemeProvider} from '@material-ui/core/styles';
 import CssBaseline from '@material-ui/core/CssBaseline';
 import Container from '@material-ui/core/Container';
 
-import ReduxShowCase from './components/redux-show-case';
+import ReduxShowCase from './redux/redux-show-case';
 import LifeCycleTransform from './lifecycle-transform';
 
 function App() {
@@ -14,11 +14,11 @@ function App() {
       <Container maxWidth={false}>
           <BrowserRouter>
             <Switch>
-              <Route path="">
-                <LifeCycleTransform/>
-              </Route>
               <Route path="/redux">
                 <ReduxShowCase />
+              </Route>
+              <Route path="">
+                <LifeCycleTransform/>
               </Route>
             </Switch>
           </BrowserRouter>

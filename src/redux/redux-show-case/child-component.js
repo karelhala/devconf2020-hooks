@@ -1,6 +1,6 @@
 import React from 'react'
-import { useDispatch } from '../../rexud-using-hooks'
-import useSelector from '../../rexud-using-hooks/use-selector'
+import { useDispatch } from '../rexud-using-hooks'
+import useSelector from '../rexud-using-hooks/use-selector'
 
 const ChildComponent = () => {
   const dispatch = useDispatch()
