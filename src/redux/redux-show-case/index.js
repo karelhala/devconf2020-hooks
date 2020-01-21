@@ -1,6 +1,6 @@
 import React from 'react'
-import { Store } from '../../rexud-using-hooks'
-import demoReducer from '../../rexud-using-hooks/demo-reducer';
+import { Store } from '../rexud-using-hooks'
+import demoReducer from '../rexud-using-hooks/demo-reducer';
 import ChildComponent from './child-component';
 import DisplayComponent from './display-component';
 
