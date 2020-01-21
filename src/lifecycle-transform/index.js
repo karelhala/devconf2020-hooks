@@ -10,6 +10,7 @@ import Link from '@material-ui/core/Link';
 import Typography from '@material-ui/core/Typography';
 import Box from '@material-ui/core/Box'
 import { withStyles, createStyles } from '@material-ui/core/styles';
+import { withRouter } from "react-router";
 
 import BreedDetail from './breed-detail';
 
@@ -24,7 +25,15 @@ class LifeCycleTransform extends Component {
 
   handleMenuOpen = breed => this.setState(({opened}) => ({ opened: {...opened, [breed]: !opened[breed] }}))
 
+  calculateBreed = search => search
+    .replace('?', '')
+    .split('&')
+    .map(item => item.split('='))
+    .reduce((acc, [ key, value ]) => ({ ...acc, [key]: value }), {});
+
   componentDidMount() {
+    const { breed } = this.calculateBreed(this.props.location.search);
+    breed && this.handleMenuOpen(breed);
     fetch('https://dog.ceo/api/breeds/list/all')
     .then(data => data.json())
     .then(({ message }) => Object.entries(message).filter(([key, list]) => list.length > 0).reduce((acc, [breed, subBreeds]) => ({
@@ -35,7 +44,7 @@ class LifeCycleTransform extends Component {
   }
   
   render() {
-    const {breeds, opened} = this.state;
+    const { breeds, opened } = this.state;
     const { classes } = this.props;
     return (
       <Box display="flex" flexDirection="row">
@@ -78,7 +87,7 @@ class LifeCycleTransform extends Component {
         <Box p={1} className={classes.contentContainer}>
           <Route path="/breeds">
             <BreedDetail />
-          </Route>.
+          </Route>
         </Box>
       </Box>
     )
@@ -106,4 +115,4 @@ const styles = createStyles(() => ({
 }))
 
 
-export default withStyles(styles)(LifeCycleTransform);
+export default withStyles(styles)(withRouter(LifeCycleTransform));

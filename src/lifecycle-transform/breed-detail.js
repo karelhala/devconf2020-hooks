@@ -1,10 +1,11 @@
-import React, { Component } from 'react'
+import React, { Component, createRef } from 'react'
 import { withRouter } from 'react-router-dom'
 import Typography from '@material-ui/core/Typography';
 import Box from '@material-ui/core/Box'
 import CircularProgress from '@material-ui/core/CircularProgress';
 import LinearProgress from '@material-ui/core/LinearProgress';
 import { withStyles, createStyles } from '@material-ui/core/styles';
+import { Tick } from './tick';
 
 const fetchDog = (breed, subBreed) => fetch(`https://dog.ceo/api/breed/${breed}/${subBreed}/images/random`).then(data => data.json())
 
@@ -22,6 +23,7 @@ class BreedDetail extends Component {
       dogIsFetching: true,
       timerValue: 0
     }
+    this.ref = createRef();
   }
 
   handleDogFetch(breed, subBreed) {
@@ -29,10 +31,19 @@ class BreedDetail extends Component {
     fetchDog(breed, subBreed).then(({ message }) => this.setState(() => ({src: message, dogIsFetching: false})))
   }
 
-  componentDidMount(){
-    this.handleDogFetch(this.state.breed, this.state.subBreed)
+  createIntervals = () => {
     this.fetchInterval = setInterval(() => this.handleDogFetch(this.state.breed, this.state.subBreed), FETCH_INTERVAL);
     this.progressInterval = setInterval(() => this.setState(({timerValue}) => ({timerValue: timerValue + 1})), TIMER_INTERVAL)
+  }
+
+  clearInterval = () => {
+    clearInterval(this.fetchInterval);
+    clearInterval(this.progressInterval);
+  }
+
+  componentDidMount(){
+    this.handleDogFetch(this.state.breed, this.state.subBreed)
+    this.createIntervals();
   }
 
   componentDidUpdate(_prevProps, prevState) {
@@ -45,20 +56,31 @@ class BreedDetail extends Component {
         timerValue: 0
       }, () => {
         this.handleDogFetch(this.state.breed, this.state.subBreed)
-        clearInterval(this.fetchInterval)
-        this.fetchInterval = setInterval(() => this.handleDogFetch(this.state.breed, this.state.subBreed), FETCH_INTERVAL);
-        clearInterval(this.progressInterval)
-        this.progressInterval = setInterval(() => this.setState(({timerValue}) => ({timerValue: timerValue + 1})), TIMER_INTERVAL)
+        if (this.ref?.current?.checked) {
+          this.clearInterval();
+          this.createIntervals();
+        }
       });
       
     }
   }
 
   componentWillUnmount() {
-    clearInterval(this.fetchInterval)
-    clearInterval(this.progressInterval)
+    this.clearInterval();
   }
   
+  tickClicked = () => {
+    if (this.ref?.current?.checked) {
+      this.clearInterval();
+      this.createIntervals();
+      this.setState({
+        timerValue: 0
+      });
+    } else {
+      this.clearInterval();
+    }
+  }
+
   render() {
     const { breed, subBreed, src, dogIsFetching, timerValue } = this.state
     const { classes } = this.props;
@@ -71,6 +93,11 @@ class BreedDetail extends Component {
           <Typography variant="h4" component="h2" className={classes.heading}>
             {subBreed}
           </Typography>
+        </Box>
+        <Box>
+          <div>
+            <Tick ref={this.ref}  onClick={() => this.tickClicked()} label="Auto reload"/>
+          </div>
         </Box>
         <Box className={classes.imageContainer}>
           <LinearProgress className={classes.timerIndicator} variant="determinate" value={timerValue} />
@@ -86,7 +113,7 @@ const styles = createStyles(() => ({
     textTransform: 'capitalize'
   },
   imageContainer: {
-    height: 'calc(100vh - 97px - 48px - 4px)'
+    height: 'calc(100vh - 97px - 48px - 20px)'
   },
   dogImage: {
     maxHeight: '100%'
