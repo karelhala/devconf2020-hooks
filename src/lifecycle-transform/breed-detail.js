@@ -1,114 +1,33 @@
-import React, { Component, createRef } from 'react'
-import { withRouter } from 'react-router-dom'
+import React, { useReducer, useEffect, useRef } from 'react'
 import Typography from '@material-ui/core/Typography';
 import Box from '@material-ui/core/Box'
 import CircularProgress from '@material-ui/core/CircularProgress';
 import LinearProgress from '@material-ui/core/LinearProgress';
-import { withStyles, createStyles } from '@material-ui/core/styles';
+import { makeStyles } from '@material-ui/core/styles';
 import { Tick } from './tick';
+import useQuery from './use-query';
 
 const fetchDog = (breed, subBreed) => fetch(`https://dog.ceo/api/breed/${breed}/${subBreed}/images/random`).then(data => data.json())
 
 const FETCH_INTERVAL = 10000
 const TIMER_INTERVAL = 100
 
-class BreedDetail extends Component {
-  constructor(props) {
-    super(props)
-    const query = new URLSearchParams(this.props.location.search);
-    this.state = {
-      breed: query.get('breed'),
-      subBreed: query.get('sub-breed'),
-      src: undefined,
-      dogIsFetching: true,
-      timerValue: 0
-    }
-    this.ref = createRef();
-  }
-
-  handleDogFetch(breed, subBreed) {
-    this.setState({ dogIsFetching: true, timerValue: 0 })
-    fetchDog(breed, subBreed).then(({ message }) => this.setState(() => ({src: message, dogIsFetching: false})))
-  }
-
-  createIntervals = () => {
-    this.fetchInterval = setInterval(() => this.handleDogFetch(this.state.breed, this.state.subBreed), FETCH_INTERVAL);
-    this.progressInterval = setInterval(() => this.setState(({timerValue}) => ({timerValue: timerValue + 1})), TIMER_INTERVAL)
-  }
-
-  clearInterval = () => {
-    clearInterval(this.fetchInterval);
-    clearInterval(this.progressInterval);
-  }
-
-  componentDidMount(){
-    this.handleDogFetch(this.state.breed, this.state.subBreed)
-    this.createIntervals();
-  }
-
-  componentDidUpdate(_prevProps, prevState) {
-    const query = new URLSearchParams(this.props.location.search);
-    const subBreed = query.get('sub-breed')
-    if(subBreed !== prevState.subBreed) {
-      this.setState({
-        breed: query.get('breed'),
-        subBreed,
-        timerValue: 0
-      }, () => {
-        this.handleDogFetch(this.state.breed, this.state.subBreed)
-        if (this.ref?.current?.checked) {
-          this.clearInterval();
-          this.createIntervals();
-        }
-      });
-      
-    }
-  }
-
-  componentWillUnmount() {
-    this.clearInterval();
-  }
-  
-  tickClicked = () => {
-    if (this.ref?.current?.checked) {
-      this.clearInterval();
-      this.createIntervals();
-      this.setState({
-        timerValue: 0
-      });
-    } else {
-      this.clearInterval();
-    }
-  }
-
-  render() {
-    const { breed, subBreed, src, dogIsFetching, timerValue } = this.state
-    const { classes } = this.props;
-    return (
-      <Box>
-        <Box>
-          <Typography variant="h3" component="h1" className={classes.heading}>
-            {breed}
-          </Typography>
-          <Typography variant="h4" component="h2" className={classes.heading}>
-            {subBreed}
-          </Typography>
-        </Box>
-        <Box>
-          <div>
-            <Tick ref={this.ref}  onClick={() => this.tickClicked()} label="Auto reload"/>
-          </div>
-        </Box>
-        <Box className={classes.imageContainer}>
-          <LinearProgress className={classes.timerIndicator} variant="determinate" value={timerValue} />
-          {dogIsFetching ? <CircularProgress /> : <img className={classes.dogImage} src={src} alt={src}/>}
-        </Box> 
-      </Box>
-    )
+const detailReducer = (state, action) => {
+  switch (action.type) {
+    case 'init-fetch':
+      return {...state, dogIsFetching: true, timerValue: 0}
+    case 'finish-fetch':
+      return {...state, src: action.payload, dogIsFetching: false}
+    case 'update-timer':
+      return {...state, timerValue: state.timerValue + 1}
+    case 'reset-timer':
+      return {...state, timerValue: 0}
+    default:
+      throw new Error('Unsupported action');
   }
 }
 
-const styles = createStyles(() => ({
+const useStyles = makeStyles(() => ({
   heading: {
     textTransform: 'capitalize'
   },
@@ -123,5 +42,66 @@ const styles = createStyles(() => ({
   }
 }))
 
+const BreedDetail = () =>  {
+  const {breed, subBreed} = useQuery()
+  const ref = useRef()
+  const [state, dispatch] = useReducer(detailReducer, {
+    src: undefined,
+    dogIsFetching: true,
+    timerValue: 0,
+    pause: false,
+  })
+  const classes = useStyles();
 
-export default withStyles(styles)(withRouter(BreedDetail))
+  const tickClicked = () => dispatch({type: 'reset-timer'});
+
+  const handleDogFetch = (breed, subBreed) => {
+    dispatch({ type: 'init-fetch' })
+    return fetchDog(breed, subBreed).then(({ message }) => dispatch({type: 'finish-fetch', payload: message}));
+  }
+
+  useEffect(() => {
+    handleDogFetch(breed, subBreed)
+  }, [breed,subBreed])
+
+  useEffect(() => {
+    let fetchInterval;
+    let progressInterval;
+    if(!ref?.current?.checked) {
+      clearInterval(fetchInterval)
+      clearInterval(progressInterval)
+    } else {
+      fetchInterval = setInterval(() => handleDogFetch(breed, subBreed), FETCH_INTERVAL);
+      progressInterval = setInterval(() => dispatch({type: 'update-timer'}), TIMER_INTERVAL)
+    }
+    return () => {
+      clearInterval(fetchInterval)
+      clearInterval(progressInterval)
+    }
+  }, [ref?.current?.checked])
+
+    return (
+      <Box>
+        <Box>
+          <Typography variant="h3" component="h1" className={classes.heading}>
+            {breed}
+          </Typography>
+          <Typography variant="h4" component="h2" className={classes.heading}>
+            {subBreed}
+          </Typography>
+        </Box>
+        <Box>
+          <div>
+            <Tick ref={ref} onClick={tickClicked} label="Auto reload"/>
+          </div>
+        </Box>
+        <Box className={classes.imageContainer}>
+          <LinearProgress className={classes.timerIndicator} variant="determinate" value={state.timerValue} />
+          {state.dogIsFetching ? <CircularProgress /> : <img className={classes.dogImage} src={state.src} alt={state.src}/>}
+        </Box> 
+      </Box>
+    )
+  }
+
+
+export default BreedDetail
